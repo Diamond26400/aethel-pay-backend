@@ -139,9 +139,35 @@ const paystackWebhook = async (req, res) => {
         res.sendStatus(500);
     }
 };
-//exporting functions
-module.exports = {
-    initializePayment,
-    verifyPayment,
-    paystackWebhook
+// Check the status of a specific transaction
+const checkPaymentStatus = async (req, res) => {
+    try {
+        const { reference } = req.params;
+        const result = await pool.query('SELECT status FROM transactions WHERE reference = $1', [reference]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Transaction not found' });
+        }
+        
+        res.status(200).json({ status: result.rows[0].status });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+// Fetch the latest 5 transactions (The Thunder Client low-bandwidth hack)
+const getTransactions = async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM transactions ORDER BY id DESC LIMIT 5');
+        res.status(200).json({ data: result.rows });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+// Make sure your export looks exactly like this at the bottom:
+module.exports = { 
+    initializePayment, 
+    verifyPayment, 
+    paystackWebhook, 
+    getTransactions, 
+    checkPaymentStatus 
 };
